@@ -1,20 +1,12 @@
 """
 Simulador LTV — Tarjetas de Crédito bajo Topes de Tasa
-Interfaz Streamlit
-
-Pantallas:
-1. Panel de inputs (sliders de escenario y spreads por banda)
-2. Tabla de resultados (LTV vs hurdle por banda, semáforo)
-3. Gráfica LTV vs hurdle (barras por banda)
-4. Heatmap de sensibilidades (nivel tope × duración)
-5. Datos de calibración (valores del Excel)
+Interfaz Streamlit — EGADE Business School
 """
 
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-import plotly.express as px
 from modelo import (
     cargar_datos_macro,
     cargar_datos_cfpb,
@@ -26,17 +18,89 @@ from modelo import (
 )
 
 # ──────────────────────────────────────────────
-# Config
+# Config & Custom CSS
 # ──────────────────────────────────────────────
 
 st.set_page_config(
     page_title="Simulador LTV — Topes de Tasa",
     page_icon="💳",
     layout="wide",
+    initial_sidebar_state="collapsed",
 )
 
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    .stApp {
+        background: linear-gradient(180deg, #0a0f1a 0%, #111827 100%);
+        color: #e2e8f0;
+    }
+    h1, h2, h3 { font-family: 'DM Sans', sans-serif !important; color: #f1f5f9 !important; }
+    h1 { letter-spacing: -0.5px !important; }
+
+    [data-testid="stMetricValue"] {
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 1.8rem !important;
+        color: #60a5fa !important;
+    }
+    [data-testid="stMetricLabel"] {
+        font-family: 'DM Sans', sans-serif !important;
+        color: #94a3b8 !important;
+        font-size: 0.85rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    [data-testid="stMetric"] {
+        background: rgba(30, 41, 59, 0.7);
+        border: 1px solid rgba(71, 85, 105, 0.4);
+        border-radius: 12px;
+        padding: 16px 20px;
+    }
+    .block-container { padding-top: 2rem; max-width: 1300px; }
+
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 4px; background: rgba(30, 41, 59, 0.5); border-radius: 12px; padding: 4px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px; color: #94a3b8; font-family: 'DM Sans', sans-serif; font-weight: 500;
+    }
+    .stTabs [aria-selected="true"] {
+        background: rgba(59, 130, 246, 0.2) !important; color: #60a5fa !important;
+    }
+    .stSlider > div > div > div > div { background: #3b82f6 !important; }
+    .stDataFrame { border-radius: 12px; overflow: hidden; }
+    hr { border-color: rgba(71, 85, 105, 0.3) !important; margin: 2rem 0 !important; }
+    .stSelectbox > div > div { background: rgba(30, 41, 59, 0.7); border-color: rgba(71, 85, 105, 0.4); }
+
+    .hero-badge {
+        display: inline-block; background: rgba(59, 130, 246, 0.15); color: #60a5fa;
+        padding: 4px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+        font-family: 'DM Sans', sans-serif; margin-bottom: 12px; letter-spacing: 0.5px;
+    }
+    .hero-title {
+        font-family: 'DM Sans', sans-serif; font-size: 2.4rem; font-weight: 700;
+        color: #f1f5f9; margin-bottom: 4px; letter-spacing: -0.5px;
+    }
+    .hero-subtitle {
+        font-family: 'DM Sans', sans-serif; font-size: 1.05rem; color: #94a3b8;
+        line-height: 1.6; max-width: 800px;
+    }
+    .badge-mantener {
+        background: rgba(34, 197, 94, 0.15); color: #4ade80; padding: 4px 12px;
+        border-radius: 20px; font-weight: 600; font-size: 0.85rem;
+        font-family: 'DM Sans', sans-serif; display: inline-block;
+    }
+    .badge-migrar {
+        background: rgba(239, 68, 68, 0.15); color: #f87171; padding: 4px 12px;
+        border-radius: 20px; font-weight: 600; font-size: 0.85rem;
+        font-family: 'DM Sans', sans-serif; display: inline-block;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # ──────────────────────────────────────────────
-# Carga de datos (cacheada)
+# Data
 # ──────────────────────────────────────────────
 
 @st.cache_data
@@ -50,257 +114,241 @@ def load_cfpb():
 datos_macro = load_macro()
 df_cfpb = load_cfpb()
 
+BAND_COLORS = {
+    "Deep Subprime": "#ef4444",
+    "Subprime":      "#f97316",
+    "Near-Prime":    "#eab308",
+    "Prime":         "#22c55e",
+    "Prime Plus":    "#3b82f6",
+    "Superprime":    "#8b5cf6",
+}
+
 # ──────────────────────────────────────────────
 # Header
 # ──────────────────────────────────────────────
 
-st.title("💳 Simulador LTV — Tarjetas de Crédito bajo Topes de Tasa")
+st.markdown('<div class="hero-badge">EGADE BUSINESS SCHOOL · PROYECTO FINAL</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-title">💳 Simulador LTV — Topes de Tasa</div>', unsafe_allow_html=True)
 st.markdown(
-    "¿Qué bandas FICO mantienen un LTV sostenible bajo un tope regulatorio temporal, "
-    "y cuáles deberían migrar a pago fijo?"
+    '<div class="hero-subtitle">'
+    '¿Qué bandas FICO mantienen un LTV sostenible en crédito revolvente bajo un tope regulatorio temporal, '
+    'y cuáles deberían migrar a un esquema de pago fijo?'
+    '</div>',
+    unsafe_allow_html=True,
 )
-st.divider()
+st.markdown("")
+
+# ── KPIs ──
+st.markdown("---")
+kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+kpi1.metric("APR Agregado", f"{datos_macro['APR_pct']:.2f}%")
+kpi2.metric("Charge-Off Top 100", f"{datos_macro['ChargeOff_pct']:.2f}%")
+kpi3.metric("Treasury 10Y (Rf)", f"{datos_macro['Treasury10Y_pct']:.2f}%")
+kpi4.metric("Fondeo SOFR", f"{datos_macro['Fondeo_pct']:.2f}%")
+st.caption(f"Datos FRED · Última observación: {datos_macro['fecha']}")
+st.markdown("---")
 
 # ──────────────────────────────────────────────
-# 1. Panel de inputs
+# 1. Inputs
 # ──────────────────────────────────────────────
 
-st.header("1 · Escenario regulatorio")
+st.markdown("### ⚙️ Escenario regulatorio")
 
-col_esc1, col_esc2 = st.columns(2)
-
+col_esc1, col_esc2 = st.columns([3, 1])
 with col_esc1:
-    tope = st.slider(
-        "Nivel del tope regulatorio (%)",
-        min_value=10.0,
-        max_value=30.0,
-        value=20.0,
-        step=0.5,
-        help="Tasa máxima permitida durante la vigencia del tope",
-    )
-
+    tope = st.slider("Nivel del tope regulatorio (%)", 10.0, 30.0, 20.0, 0.5,
+        help="Tasa máxima permitida durante la vigencia del tope.")
 with col_esc2:
-    duracion_tope = st.selectbox(
-        "Duración del tope (meses)",
-        options=[3, 6, 12],
-        index=1,
-        help="Período durante el cual aplica el tope regulatorio",
-    )
+    duracion_tope = st.selectbox("Duración (meses)", [3, 6, 12], index=1)
 
-st.subheader("Spreads por banda (bps sobre Rf)")
-st.caption(
-    f"Rf actual (Treasury 10Y): **{datos_macro['Treasury10Y_pct']:.2f}%** — "
-    "El spread determina la tasa de descuento (hurdle rate) de cada banda."
-)
+st.markdown("")
+with st.expander("🎚️ Spreads por banda (bps sobre Rf) — click para ajustar", expanded=False):
+    st.caption(f"Rf actual = {datos_macro['Treasury10Y_pct']:.2f}%. El spread determina el hurdle rate de cada banda.")
+    spread_cols = st.columns(6)
+    spreads_bps = {}
+    for i, banda in enumerate(BANDAS):
+        with spread_cols[i]:
+            spreads_bps[banda] = st.slider(banda, 0, 1000, SPREAD_DEFAULTS_BPS[banda], 25, key=f"spread_{banda}")
 
-spread_cols = st.columns(6)
-spreads_bps = {}
-for i, banda in enumerate(BANDAS):
-    with spread_cols[i]:
-        spreads_bps[banda] = st.slider(
-            banda,
-            min_value=0,
-            max_value=1000,
-            value=SPREAD_DEFAULTS_BPS[banda],
-            step=25,
-            key=f"spread_{banda}",
-        )
-
-st.divider()
+st.markdown("---")
 
 # ──────────────────────────────────────────────
-# Cálculo principal
+# Cálculo
 # ──────────────────────────────────────────────
 
-df_resultados = calcular_todas_bandas(
-    datos_macro, df_cfpb, tope, duracion_tope, spreads_bps
-)
+df_resultados = calcular_todas_bandas(datos_macro, df_cfpb, tope, duracion_tope, spreads_bps)
 
 # ──────────────────────────────────────────────
-# 2. Tabla de resultados
+# 2. Decision cards
 # ──────────────────────────────────────────────
 
-st.header("2 · Resultados por banda")
+st.markdown("### 📊 Decisión por banda FICO")
+card_cols = st.columns(6)
 
-def semaforo(decision):
-    return "✅ MANTENER" if decision == "MANTENER" else "🔴 MIGRAR"
+for i, (_, row) in enumerate(df_resultados.iterrows()):
+    banda = row["Banda"]
+    color = BAND_COLORS[banda]
+    badge = "badge-mantener" if row["Decision"] == "MANTENER" else "badge-migrar"
+    badge_text = "✅ MANTENER" if row["Decision"] == "MANTENER" else "🔴 MIGRAR"
+    margen_color = "#4ade80" if row["Margen_USD"] >= 0 else "#f87171"
 
-df_display = df_resultados.copy()
-df_display["Decisión"] = df_display["Decision"].apply(semaforo)
-df_display["LTV ($)"] = df_display["LTV_USD"].apply(lambda x: f"${x:,.0f}")
-df_display["Hurdle ($)"] = df_display["Hurdle_USD"].apply(lambda x: f"${x:,.0f}")
-df_display["Margen ($)"] = df_display["Margen_USD"].apply(lambda x: f"${x:,.0f}")
-df_display["Tasa Efectiva M1 (%)"] = df_display["Tasa_Efectiva_M1_pct"].apply(lambda x: f"{x:.1f}%")
-df_display["r Descuento (%)"] = df_display["r_Descuento_pct"].apply(lambda x: f"{x:.2f}%")
-df_display["Charge-Off (%)"] = df_display["ChargeOff_Banda_pct"].apply(lambda x: f"{x:.2f}%")
+    with card_cols[i]:
+        st.markdown(f"""
+        <div style="background:rgba(30,41,59,0.6);border:1px solid {color}40;border-top:3px solid {color};
+            border-radius:12px;padding:16px 14px;text-align:center;min-height:240px;">
+            <div style="font-family:'DM Sans';font-weight:700;color:{color};font-size:0.9rem;margin-bottom:8px;">{banda}</div>
+            <div class="{badge}" style="margin-bottom:12px;">{badge_text}</div>
+            <div style="font-family:'JetBrains Mono';font-size:0.8rem;color:#94a3b8;line-height:2;">
+                <div>LTV <span style="color:#e2e8f0;font-weight:500;">${row["LTV_USD"]:,.0f}</span></div>
+                <div>Hurdle <span style="color:#e2e8f0;font-weight:500;">${row["Hurdle_USD"]:,.0f}</span></div>
+                <div>Margen <span style="color:{margen_color};font-weight:600;">${row["Margen_USD"]:,.0f}</span></div>
+                <div style="margin-top:4px;font-size:0.7rem;color:#64748b;">
+                    {row["Pct_Revolvers"]:.0%} rev · ${row["Saldo_USD"]:,.0f}
+                </div>
+            </div>
+        </div>""", unsafe_allow_html=True)
 
-cols_show = [
-    "Banda", "Saldo_USD", "Pct_Revolvers", "APR_Banda_pct",
-    "Charge-Off (%)", "Tasa Efectiva M1 (%)", "r Descuento (%)",
-    "LTV ($)", "Hurdle ($)", "Margen ($)", "Decisión"
-]
-df_show = df_display[cols_show].rename(columns={
-    "Saldo_USD": "Saldo ($)",
-    "Pct_Revolvers": "% Revolvers",
-    "APR_Banda_pct": "APR Banda (%)",
-})
+st.markdown("")
+col_s1, col_s2 = st.columns(2)
+col_s1.metric("Bandas revolventes viables", f"{(df_resultados['Decision']=='MANTENER').sum()} de 6")
+col_s2.metric("Bandas que migran a pago fijo", f"{(df_resultados['Decision']=='MIGRAR').sum()} de 6")
 
-st.dataframe(df_show, use_container_width=True, hide_index=True)
+with st.expander("📋 Tabla detallada de resultados", expanded=False):
+    df_display = df_resultados.copy()
+    df_display["Decisión"] = df_display["Decision"].apply(lambda d: "✅ MANTENER" if d == "MANTENER" else "🔴 MIGRAR")
+    df_display["LTV ($)"] = df_display["LTV_USD"].apply(lambda x: f"${x:,.0f}")
+    df_display["Hurdle ($)"] = df_display["Hurdle_USD"].apply(lambda x: f"${x:,.0f}")
+    df_display["Margen ($)"] = df_display["Margen_USD"].apply(lambda x: f"${x:,.0f}")
+    df_display["Tasa Ef. M1"] = df_display["Tasa_Efectiva_M1_pct"].apply(lambda x: f"{x:.1f}%")
+    df_display["r Desc."] = df_display["r_Descuento_pct"].apply(lambda x: f"{x:.2f}%")
+    df_display["CO (%)"] = df_display["ChargeOff_Banda_pct"].apply(lambda x: f"{x:.2f}%")
+    st.dataframe(df_display[["Banda","Saldo_USD","Pct_Revolvers","APR_Banda_pct","CO (%)","Tasa Ef. M1","r Desc.","LTV ($)","Hurdle ($)","Margen ($)","Decisión"]].rename(
+        columns={"Saldo_USD":"Saldo ($)","Pct_Revolvers":"% Rev","APR_Banda_pct":"APR (%)"}
+    ), use_container_width=True, hide_index=True)
 
-# Resumen rápido
-n_mantener = (df_resultados["Decision"] == "MANTENER").sum()
-n_migrar = (df_resultados["Decision"] == "MIGRAR").sum()
-
-col_m1, col_m2 = st.columns(2)
-col_m1.metric("Bandas que se mantienen", f"{n_mantener} de 6", delta=None)
-col_m2.metric("Bandas que migran a pago fijo", f"{n_migrar} de 6", delta=None)
-
-st.divider()
+st.markdown("---")
 
 # ──────────────────────────────────────────────
 # 3. Gráfica LTV vs Hurdle
 # ──────────────────────────────────────────────
 
-st.header("3 · LTV vs Hurdle por banda")
+st.markdown("### 📈 LTV vs Hurdle por banda")
 
 fig_bar = go.Figure()
-
-colors_ltv = [
-    "#2ecc71" if d == "MANTENER" else "#e74c3c"
-    for d in df_resultados["Decision"]
-]
-
 fig_bar.add_trace(go.Bar(
-    name="LTV (VP flujos netos)",
-    x=df_resultados["Banda"],
-    y=df_resultados["LTV_USD"],
-    marker_color=colors_ltv,
+    name="LTV (VP flujos netos a 60m)",
+    x=df_resultados["Banda"], y=df_resultados["LTV_USD"],
+    marker_color=[BAND_COLORS[b] for b in df_resultados["Banda"]],
+    marker_line=dict(width=0),
     text=df_resultados["LTV_USD"].apply(lambda x: f"${x:,.0f}"),
     textposition="outside",
+    textfont=dict(size=12, family="JetBrains Mono", color="#e2e8f0"),
+    opacity=0.9,
 ))
-
 fig_bar.add_trace(go.Scatter(
     name="Hurdle (rendimiento mínimo exigido)",
-    x=df_resultados["Banda"],
-    y=df_resultados["Hurdle_USD"],
-    mode="markers+lines",
-    marker=dict(size=12, color="#f39c12", symbol="diamond"),
-    line=dict(color="#f39c12", width=2, dash="dash"),
+    x=df_resultados["Banda"], y=df_resultados["Hurdle_USD"],
+    mode="markers+lines+text",
+    marker=dict(size=10, color="#fbbf24", symbol="diamond", line=dict(width=2, color="#1e293b")),
+    line=dict(color="#fbbf24", width=2.5, dash="dash"),
     text=df_resultados["Hurdle_USD"].apply(lambda x: f"${x:,.0f}"),
     textposition="top center",
+    textfont=dict(size=11, family="JetBrains Mono", color="#fbbf24"),
 ))
-
 fig_bar.update_layout(
-    yaxis_title="USD (valor presente 60 meses)",
-    xaxis_title="Banda FICO",
-    barmode="group",
-    height=500,
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
-    plot_bgcolor="rgba(0,0,0,0)",
+    yaxis_title="USD (valor presente a 60 meses)", xaxis_title="",
+    height=520,
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5,
+        font=dict(family="DM Sans", size=12, color="#94a3b8"), bgcolor="rgba(0,0,0,0)"),
+    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+    font=dict(family="DM Sans", color="#94a3b8"),
+    xaxis=dict(tickfont=dict(size=12, color="#e2e8f0")),
+    yaxis=dict(gridcolor="rgba(71,85,105,0.3)", zerolinecolor="rgba(71,85,105,0.5)", tickprefix="$", tickformat=","),
+    margin=dict(t=60, b=40),
 )
-fig_bar.update_yaxes(gridcolor="rgba(128,128,128,0.2)")
-
 st.plotly_chart(fig_bar, use_container_width=True)
-
-st.divider()
+st.markdown("---")
 
 # ──────────────────────────────────────────────
-# 4. Heatmap de sensibilidades
+# 4. Heatmap
 # ──────────────────────────────────────────────
 
-st.header("4 · Heatmap de sensibilidades")
-st.caption(
-    "Verde = MANTENER revolvente · Rojo = MIGRAR a pago fijo. "
-    "Cada celda muestra el margen (LTV − Hurdle) en USD."
-)
+st.markdown("### 🗺️ Mapa de sensibilidades")
+st.markdown(
+    '<span style="color:#94a3b8;font-size:0.9rem;">'
+    '<span style="color:#4ade80;">■</span> MANTENER · '
+    '<span style="color:#f87171;">■</span> MIGRAR · '
+    'Valor = margen LTV − Hurdle (USD)</span>', unsafe_allow_html=True)
 
 with st.spinner("Calculando sensibilidades..."):
     niveles = list(np.arange(10, 31, 1))
-    df_sens = calcular_sensibilidades(
-        datos_macro, df_cfpb, spreads_bps,
-        niveles_tope=niveles,
-        duraciones=[3, 6, 12],
-    )
+    df_sens = calcular_sensibilidades(datos_macro, df_cfpb, spreads_bps, niveles_tope=niveles, duraciones=[3, 6, 12])
 
-# Un heatmap por duración
-tabs_dur = st.tabs([f"Duración: {d} meses" for d in [3, 6, 12]])
-
+tabs_dur = st.tabs([f"⏱️ {d} meses" for d in [3, 6, 12]])
 for tab, dur in zip(tabs_dur, [3, 6, 12]):
     with tab:
         df_d = df_sens[df_sens["Duracion_meses"] == dur]
-        pivot = df_d.pivot_table(
-            index="Tope_pct", columns="Banda", values="Margen_USD"
-        )
-        pivot = pivot[BANDAS]
+        pivot = df_d.pivot_table(index="Tope_pct", columns="Banda", values="Margen_USD")[BANDAS]
 
-        # Color: verde positivo, rojo negativo
         fig_hm = go.Figure(data=go.Heatmap(
-            z=pivot.values,
-            x=pivot.columns.tolist(),
+            z=pivot.values, x=pivot.columns.tolist(),
             y=[f"{int(t)}%" for t in pivot.index],
-            colorscale=[
-                [0, "#e74c3c"],
-                [0.5, "#ffeaa7"],
-                [1, "#2ecc71"],
-            ],
+            colorscale=[[0,"#991b1b"],[0.3,"#ef4444"],[0.5,"#1e293b"],[0.7,"#22c55e"],[1,"#166534"]],
             zmid=0,
             text=np.round(pivot.values, 0).astype(int).astype(str),
             texttemplate="%{text}",
-            textfont={"size": 11},
-            colorbar=dict(title="Margen ($)"),
-            hovertemplate="Banda: %{x}<br>Tope: %{y}<br>Margen: $%{z:,.0f}<extra></extra>",
+            textfont=dict(size=11, family="JetBrains Mono", color="#e2e8f0"),
+            colorbar=dict(title=dict(text="Margen ($)", font=dict(color="#94a3b8")),
+                tickfont=dict(color="#94a3b8"), tickprefix="$", bgcolor="rgba(0,0,0,0)"),
+            hovertemplate="<b>%{x}</b><br>Tope: %{y}<br>Margen: $%{z:,.0f}<extra></extra>",
+            xgap=2, ygap=2,
         ))
-
         fig_hm.update_layout(
-            yaxis_title="Nivel del tope (%)",
-            xaxis_title="Banda FICO",
-            height=550,
-            yaxis=dict(dtick=1),
+            yaxis_title="Nivel del tope (%)", xaxis_title="", height=600,
+            yaxis=dict(dtick=1, tickfont=dict(size=11)),
+            xaxis=dict(tickfont=dict(size=12, color="#e2e8f0")),
+            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="DM Sans", color="#94a3b8"), margin=dict(t=20, b=40),
         )
-
         st.plotly_chart(fig_hm, use_container_width=True)
 
-st.divider()
+st.markdown("---")
 
 # ──────────────────────────────────────────────
-# 5. Datos de calibración
+# 5. Calibración
 # ──────────────────────────────────────────────
 
-st.header("5 · Datos de calibración")
+st.markdown("### 🔬 Datos de calibración")
 
-st.subheader("Datos macroeconómicos (última observación)")
-col_c1, col_c2, col_c3, col_c4 = st.columns(4)
-col_c1.metric("APR agregado", f"{datos_macro['APR_pct']:.2f}%")
-col_c2.metric("Charge-Off (Top 100)", f"{datos_macro['ChargeOff_pct']:.2f}%")
-col_c3.metric("Treasury 10Y (Rf)", f"{datos_macro['Treasury10Y_pct']:.2f}%")
-col_c4.metric("Fondeo (SOFR)", f"{datos_macro['Fondeo_pct']:.2f}%")
-st.caption(f"Fecha de última observación: {datos_macro['fecha']}")
+with st.expander("Datos CFPB por banda FICO (2024)", expanded=False):
+    df_cfpb_display = df_cfpb[["Rango_Score","Pct_Revolvers_2024","Saldo_Promedio_GP_2024_USD",
+        "APR_Promedio_NuevasCuentas_2024_pct","Payment_Rate_2024_pct"]].copy()
+    df_cfpb_display.index.name = "Banda"
+    df_cfpb_display.columns = ["Rango Score","% Revolvers","Saldo Promedio ($)","APR Nuevas Cuentas (%)","Payment Rate (%)"]
+    st.dataframe(df_cfpb_display, use_container_width=True)
 
-st.subheader("Datos CFPB por banda FICO (2024)")
-df_cfpb_display = df_cfpb[
-    ["Rango_Score", "Pct_Revolvers_2024", "Saldo_Promedio_GP_2024_USD",
-     "APR_Promedio_NuevasCuentas_2024_pct", "Payment_Rate_2024_pct"]
-].copy()
-df_cfpb_display.index.name = "Banda"
-df_cfpb_display.columns = [
-    "Rango Score", "% Revolvers", "Saldo Promedio ($)", "APR Nuevas Cuentas (%)", "Payment Rate (%)"
-]
-st.dataframe(df_cfpb_display, use_container_width=True)
+with st.expander("Multiplicadores de charge-off por banda", expanded=False):
+    st.caption("Charge-off base FRED diferenciado por banda con multiplicadores calibrados vía CFPB.")
+    st.dataframe(pd.DataFrame({
+        "Banda": BANDAS,
+        "Multiplicador": [f"{MULT_CHARGEOFF[b]:.2f}×" for b in BANDAS],
+        "Charge-Off Implícito": [f"{datos_macro['ChargeOff_pct']*MULT_CHARGEOFF[b]:.2f}%" for b in BANDAS],
+    }), use_container_width=True, hide_index=True)
 
-st.subheader("Multiplicadores de charge-off por banda")
-df_mult = pd.DataFrame({
-    "Banda": BANDAS,
-    "Multiplicador": [MULT_CHARGEOFF[b] for b in BANDAS],
-    "Charge-Off Implícito (%)": [round(datos_macro["ChargeOff_pct"] * MULT_CHARGEOFF[b], 2) for b in BANDAS],
-})
-st.dataframe(df_mult, use_container_width=True, hide_index=True)
+with st.expander("Supuestos del modelo", expanded=False):
+    st.markdown("""
+1. El comportamiento del cliente (% revolvers) **no cambia** durante la vigencia del tope
+2. La tasa de pérdida neta base **no cambia** durante la vigencia del tope
+3. Portafolios con perfil de **banca Tier 1** en Estados Unidos
+4. Datos FICO del CFPB (2024) como **parámetros fijos**
+5. Rf y fondeo: **última observación** disponible en FRED
+6. Horizonte de análisis: **60 meses**
+    """)
 
-# ──────────────────────────────────────────────
-# Footer
-# ──────────────────────────────────────────────
-
-st.divider()
-st.caption(
-    "Simulador LTV · Proyecto Final Maestría en Finanzas EGADE · "
-    "Fuentes: FRED (TERMCBCCALLNS, CORCCT100S, DGS10, SOFR), CFPB Credit Card Market Report 2025"
-)
+# ── Footer ──
+st.markdown("---")
+st.markdown(
+    '<div style="text-align:center;color:#475569;font-size:0.8rem;font-family:DM Sans;padding:10px 0 30px;">'
+    'Simulador LTV · Proyecto Final · Maestría en Finanzas EGADE Business School<br>'
+    'Fuentes: FRED (TERMCBCCALLNS, CORCCT100S, DGS10, SOFR) · CFPB Credit Card Market Report 2025'
+    '</div>', unsafe_allow_html=True)
