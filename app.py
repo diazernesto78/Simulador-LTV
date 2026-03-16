@@ -247,42 +247,40 @@ st.markdown("")
 
 fig = go.Figure()
 fig.add_trace(go.Bar(
-    name="LTV (VP flujos netos a 60m)",
+    name="Barra = LTV",
     x=df_analisis["Banda"], y=df_analisis["LTV_USD"],
     marker_color=[BAND_COLORS[b] for b in df_analisis["Banda"]],
-    text=df_analisis["LTV_USD"].apply(lambda x: f"${x:,.0f}"),
-    textposition="outside",
-    textfont=dict(size=14, family="IBM Plex Mono", color="#f1f5f9"),
-    opacity=0.9,
+    showlegend=True, opacity=0.9,
+    hovertemplate="LTV: $%{y:,.0f}<extra></extra>",
 ))
 fig.add_trace(go.Scatter(
-    name="Hurdle (rendimiento mínimo exigido)",
+    name="\u25C6 = Hurdle",
     x=df_analisis["Banda"], y=df_analisis["Hurdle_USD"],
     mode="markers+lines",
     marker=dict(size=14, color="#fbbf24", symbol="diamond", line=dict(width=2, color="#1e293b")),
     line=dict(color="#fbbf24", width=3, dash="dash"),
     hovertemplate="Hurdle: $%{y:,.0f}<extra></extra>",
 ))
-# Add hurdle annotations manually to avoid overlap
 for _, row in df_analisis.iterrows():
     ltv_r = round(row["LTV_USD"])
     hur_r = round(row["Hurdle_USD"])
-    # If values are close, put hurdle label below diamond; otherwise above
-    y_offset = -30 if abs(ltv_r - hur_r) < 250 else 25
-    fig.add_annotation(
-        x=row["Banda"], y=hur_r,
-        text=f"  ${hur_r:,}  ", showarrow=False,
-        font=dict(size=13, family="IBM Plex Mono", color="#ffffff", weight="bold"),
-        bgcolor="rgba(15, 23, 42, 0.8)",
-        bordercolor="#fbbf24",
-        borderwidth=1,
-        borderpad=3,
-        yshift=y_offset,
-    )
+    mar_r = ltv_r - hur_r
+    mc2 = "#4ade80" if mar_r >= 0 else "#f87171"
+    ms = "+" if mar_r >= 0 else ""
+    fig.add_annotation(x=row["Banda"], y=ltv_r, text=f"  ${ltv_r:,}  ", showarrow=False,
+        font=dict(size=14, family="IBM Plex Mono", color="#ffffff"),
+        bgcolor="rgba(15,23,42,0.8)", borderpad=3, yshift=22)
+    y_off = -30 if abs(ltv_r - hur_r) < 250 else 25
+    fig.add_annotation(x=row["Banda"], y=hur_r, text=f"  ${hur_r:,}  ", showarrow=False,
+        font=dict(size=12, family="IBM Plex Mono", color="#ffffff"),
+        bgcolor="rgba(15,23,42,0.85)", bordercolor="#fbbf24", borderwidth=1, borderpad=3, yshift=y_off)
+    fig.add_annotation(x=row["Banda"], y=max(ltv_r, 0) / 2, text=f"  {ms}${abs(mar_r):,}  ", showarrow=False,
+        font=dict(size=16, family="IBM Plex Mono", color=mc2),
+        bgcolor="rgba(15,23,42,0.7)", borderpad=4)
 fig.update_layout(
-    yaxis_title="USD (valor presente a 60 meses)", xaxis_title="", height=540,
+    yaxis_title="USD (valor presente a 60 meses)", xaxis_title="", height=560,
     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5,
-        font=dict(family="DM Sans", size=13, color="#e2e8f0"), bgcolor="rgba(0,0,0,0)"),
+        font=dict(family="DM Sans", size=14, color="#f1f5f9"), bgcolor="rgba(0,0,0,0)"),
     plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
     font=dict(family="DM Sans", size=13, color="#e2e8f0"),
     xaxis=dict(tickfont=dict(size=14, color="#f1f5f9")),
@@ -399,7 +397,7 @@ for tab, dur in zip(tabs, [3, 6, 9, 12]):
         fig_hm = go.Figure(data=go.Heatmap(
             z=pv.values, x=pv.columns.tolist(),
             y=[f"{int(t)}%" for t in pv.index],
-            colorscale=[[0,"#991b1b"],[0.3,"#ef4444"],[0.5,"#1e293b"],[0.7,"#22c55e"],[1,"#166534"]],
+            colorscale=[[0,"#dc2626"],[0.35,"#f87171"],[0.5,"#334155"],[0.65,"#4ade80"],[1,"#16a34a"]],
             zmid=0,
             text=np.round(pv.values, 0).astype(int).astype(str),
             texttemplate="%{text}",
