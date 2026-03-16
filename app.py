@@ -278,7 +278,90 @@ st.plotly_chart(fig, use_container_width=True)
 st.markdown("---")
 
 # ══════════════════════════════════════
-# 4. HEATMAP SENSIBILIDADES
+# 4. MOTOR DE CHOQUE DE PAGO
+# ══════════════════════════════════════
+from motor_choque import calcular_choque_todas_bandas
+
+st.markdown('<div class="section-title">💥 Choque de Pago por Migración</div>', unsafe_allow_html=True)
+st.markdown(
+    '<span style="color:#cbd5e1;font-size:1rem;">'
+    'Si un cliente migra de revolvente a pago fijo, ¿cuánto sube su pago mensual y cuántos caen en default?'
+    '</span>', unsafe_allow_html=True)
+st.markdown("")
+
+ch_c1, ch_c2, ch_c3 = st.columns(3)
+with ch_c1:
+    plazo_amort = st.selectbox("Plazo de amortización", [12, 24, 36, 48, 60], index=2,
+        format_func=lambda x: f"{x} meses")
+with ch_c2:
+    sensibilidad_choque = st.slider("Sensibilidad al choque", 0.01, 0.20, 0.05, 0.01,
+        help="Puntos adicionales de probabilidad de default por cada múltiplo de choque de pago arriba de 1×")
+with ch_c3:
+    severidad = st.slider("Severidad de pérdida (%)", 20.0, 100.0, 80.0, 5.0,
+        help="Porcentaje del saldo que se pierde si el cliente entra en default tras la migración")
+
+df_choque = calcular_choque_todas_bandas(df_resultados, df_cfpb, tope, plazo_amort, sensibilidad_choque, severidad)
+df_ch_analisis = df_choque[df_choque["Decision_LTV"].isin(["MANTENER", "MIGRAR"])]
+
+# Cards de choque
+st.markdown("")
+ch_cards = st.columns(4)
+for i, (_, row) in enumerate(df_ch_analisis.iterrows()):
+    banda = row["Banda"]
+    color = BAND_COLORS[banda]
+    dec = row["Decision_Final"]
+
+    if "MANTENER ✅" in dec:
+        badge_cls, badge_txt = "badge-mantener", "✅ MANTENER"
+    elif "PÉRDIDA" in dec:
+        badge_html = '<span style="background:rgba(234,179,8,0.2);color:#fbbf24;padding:5px 14px;border-radius:20px;font-weight:700;font-size:0.9rem;font-family:DM Sans;display:inline-block;">⚠️ MANTENER CON PÉRDIDA</span>'
+        badge_cls = None
+    else:
+        badge_cls, badge_txt = "badge-migrar", "🔴 MIGRAR"
+
+    pago_a = row["Pago_Actual_USD"]
+    pago_n = round(row["Pago_Nuevo_USD"])
+    mult = row["Multiplo_Choque"]
+    p_def = row["P_Default_Choque_pct"]
+    perd = round(row["Perdida_Migracion_USD"])
+    costo_m = round(row["Costo_Mantener_USD"])
+
+    if badge_cls:
+        badge_html = f'<div class="{badge_cls}">{badge_txt}</div>'
+
+    with ch_cards[i]:
+        st.markdown(f"""
+        <div style="background:rgba(30,41,59,0.6);border:1px solid {color}50;border-top:4px solid {color};
+            border-radius:14px;padding:18px 16px;text-align:center;min-height:320px;">
+            <div style="font-family:'DM Sans';font-weight:700;color:{color};font-size:1.05rem;margin-bottom:10px;">{banda}</div>
+            {badge_html}
+            <div style="font-family:'JetBrains Mono';font-size:0.85rem;color:#cbd5e1;line-height:2;margin-top:12px;">
+                <div>Pago actual <span style="color:#f1f5f9;font-weight:600;">${pago_a:,.0f}/mes</span></div>
+                <div>Pago nuevo <span style="color:#fbbf24;font-weight:600;">${pago_n:,.0f}/mes</span></div>
+                <div>Choque <span style="color:#f87171;font-weight:700;">{mult:.1f}×</span></div>
+                <div>P(default) <span style="color:#f87171;font-weight:600;">{p_def:.1f}%</span></div>
+                <div style="margin-top:6px;border-top:1px solid rgba(71,85,105,0.3);padding-top:6px;">
+                    <div>Pérdida migrar <span style="color:#f87171;font-weight:600;">${perd:,}</span></div>
+                    <div>Costo mantener <span style="color:#fbbf24;font-weight:600;">${costo_m:,}</span></div>
+                </div>
+            </div>
+        </div>""", unsafe_allow_html=True)
+
+st.markdown("""
+<div class="note-box">
+    <strong>¿Cómo leer esta sección?</strong><br>
+    Cuando el Motor 2 (LTV) dice MIGRAR, este motor calcula cuánto cuesta realmente migrar al cliente.
+    Si la pérdida por migración es mayor que el costo de mantenerlo en revolvente con margen negativo,
+    la decisión óptima es <strong>mantener con pérdida</strong> — es el menor de dos males.<br><br>
+    El choque de pago es el múltiplo entre el pago nuevo (amortización fija) y el pago actual (mínimo revolvente).
+    A mayor choque, mayor probabilidad de que el cliente deje de pagar al ser migrado.
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("---")
+
+# ══════════════════════════════════════
+# 5. HEATMAP SENSIBILIDADES
 # ══════════════════════════════════════
 st.markdown('<div class="section-title">🗺️ Mapa de Sensibilidades</div>', unsafe_allow_html=True)
 st.markdown(
