@@ -17,35 +17,35 @@ st.set_page_config(page_title="Simulador LTV — Topes de Tasa", page_icon="💳
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-    .stApp { background: linear-gradient(180deg, #0a0f1a 0%, #111827 100%); color: #e2e8f0; }
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+    .stApp { background: linear-gradient(180deg, #0a0f1a 0%, #111827 100%); color: #f1f5f9; }
 
-    /* Typography - bigger, clearer */
-    h1, h2, h3 { font-family: 'DM Sans', sans-serif !important; color: #f1f5f9 !important; }
-    p, li, span, div { font-size: 1rem; }
+    /* Typography - bigger, clearer, WHITE not grey */
+    h1, h2, h3 { font-family: 'DM Sans', sans-serif !important; color: #ffffff !important; }
+    p, li, span, div { font-size: 1rem; color: #f1f5f9; }
 
     /* Metrics */
-    [data-testid="stMetricValue"] { font-family: 'JetBrains Mono', monospace !important; font-size: 2rem !important; color: #60a5fa !important; }
-    [data-testid="stMetricLabel"] { font-family: 'DM Sans', sans-serif !important; color: #cbd5e1 !important; font-size: 0.9rem !important; text-transform: uppercase; letter-spacing: 0.5px; }
+    [data-testid="stMetricValue"] { font-family: 'IBM Plex Mono', monospace !important; font-size: 2rem !important; color: #60a5fa !important; }
+    [data-testid="stMetricLabel"] { font-family: 'DM Sans', sans-serif !important; color: #e2e8f0 !important; font-size: 0.9rem !important; text-transform: uppercase; letter-spacing: 0.5px; }
     [data-testid="stMetric"] { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(71, 85, 105, 0.4); border-radius: 12px; padding: 18px 22px; }
 
     .block-container { padding-top: 2rem; max-width: 1300px; }
 
     /* Tabs */
     .stTabs [data-baseweb="tab-list"] { gap: 4px; background: rgba(30, 41, 59, 0.5); border-radius: 12px; padding: 4px; }
-    .stTabs [data-baseweb="tab"] { border-radius: 8px; color: #cbd5e1; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 1rem; }
+    .stTabs [data-baseweb="tab"] { border-radius: 8px; color: #e2e8f0; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 1rem; }
     .stTabs [aria-selected="true"] { background: rgba(59, 130, 246, 0.25) !important; color: #60a5fa !important; }
 
     .stSlider > div > div > div > div { background: #3b82f6 !important; }
-    .stSlider label { color: #e2e8f0 !important; font-size: 0.95rem !important; font-weight: 600 !important; }
-    .stSlider [data-testid="stTickBarMin"], .stSlider [data-testid="stTickBarMax"] { color: #94a3b8 !important; }
+    .stSlider label { color: #ffffff !important; font-size: 0.95rem !important; font-weight: 600 !important; }
+    .stSlider [data-testid="stTickBarMin"], .stSlider [data-testid="stTickBarMax"] { color: #cbd5e1 !important; }
     .stDataFrame { border-radius: 12px; overflow: hidden; }
     hr { border-color: rgba(71, 85, 105, 0.3) !important; margin: 2rem 0 !important; }
 
-    /* ALL labels and text visible */
-    label, .stTextInput label, .stSlider label, .stNumberInput label { color: #e2e8f0 !important; font-size: 0.95rem !important; }
-    .stMarkdown p { color: #cbd5e1 !important; }
-    [data-testid="stWidgetLabel"] p { color: #e2e8f0 !important; font-weight: 500 !important; }
+    /* ALL labels and text WHITE */
+    label, .stTextInput label, .stSlider label, .stNumberInput label { color: #ffffff !important; font-size: 0.95rem !important; }
+    .stMarkdown p { color: #e2e8f0 !important; }
+    [data-testid="stWidgetLabel"] p { color: #ffffff !important; font-weight: 500 !important; }
 
     /* Selectbox - VISIBLE */
     .stSelectbox > div > div {
@@ -57,17 +57,18 @@ st.markdown("""
     }
     .stSelectbox label { color: #fbbf24 !important; font-weight: 600 !important; font-size: 1rem !important; }
 
-    /* Expander */
-    .streamlit-expanderHeader { font-size: 1.05rem !important; color: #f1f5f9 !important; font-weight: 600 !important; }
-    [data-testid="stExpander"] summary span { color: #f1f5f9 !important; }
+    /* Expander - WHITE */
+    .streamlit-expanderHeader { font-size: 1.05rem !important; color: #ffffff !important; font-weight: 600 !important; }
+    [data-testid="stExpander"] summary span { color: #ffffff !important; }
+    [data-testid="stExpander"] summary p { color: #ffffff !important; }
 
-    /* Caption - bright */
-    .stCaption p { color: #cbd5e1 !important; font-size: 0.92rem !important; }
+    /* Caption - visible */
+    .stCaption p { color: #e2e8f0 !important; font-size: 0.92rem !important; }
 
     /* Hero */
     .hero-badge { display: inline-block; background: rgba(59, 130, 246, 0.15); color: #60a5fa; padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; font-family: 'DM Sans', sans-serif; margin-bottom: 14px; letter-spacing: 0.5px; }
     .hero-title { font-family: 'DM Sans', sans-serif; font-size: 2.8rem; font-weight: 700; color: #f1f5f9; margin-bottom: 6px; letter-spacing: -0.5px; }
-    .hero-subtitle { font-family: 'DM Sans', sans-serif; font-size: 1.15rem; color: #cbd5e1; line-height: 1.7; max-width: 850px; }
+    .hero-subtitle { font-family: 'DM Sans', sans-serif; font-size: 1.15rem; color: #e2e8f0; line-height: 1.7; max-width: 850px; }
 
     /* Section titles */
     .section-title {
@@ -80,7 +81,7 @@ st.markdown("""
     .badge-migrar { background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 5px 14px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; display: inline-block; }
     .badge-excluida { background: rgba(148, 163, 184, 0.15); color: #94a3b8; padding: 5px 14px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; display: inline-block; }
 
-    .note-box { background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 12px; padding: 18px 22px; margin: 16px 0; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: #cbd5e1; line-height: 1.7; }
+    .note-box { background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 12px; padding: 18px 22px; margin: 16px 0; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: #e2e8f0; line-height: 1.7; }
     .note-box strong { color: #60a5fa; }
 </style>
 """, unsafe_allow_html=True)
@@ -183,11 +184,11 @@ for i, (_, row) in enumerate(df_analisis.iterrows()):
             border-radius:14px;padding:18px 16px;text-align:center;min-height:280px;">
             <div style="font-family:'DM Sans';font-weight:700;color:{color};font-size:1.05rem;margin-bottom:10px;">{banda}</div>
             <div class="{badge}" style="margin-bottom:14px;">{badge_text}</div>
-            <div style="font-family:'JetBrains Mono';font-size:0.95rem;color:#cbd5e1;line-height:2.2;">
+            <div style="font-family:'IBM Plex Mono';font-size:0.95rem;color:#cbd5e1;line-height:2.2;">
                 <div>LTV <span style="color:#f1f5f9;font-weight:600;">${ltv_show:,.0f}</span></div>
                 <div>Hurdle <span style="color:#f1f5f9;font-weight:600;">${hur_show:,.0f}</span></div>
                 <div>Margen <span style="color:{mc};font-weight:700;">${mar_show:,.0f}</span></div>
-                <div style="margin-top:6px;font-size:0.8rem;color:#94a3b8;">
+                <div style="margin-top:6px;font-size:0.8rem;color:#cbd5e1;">
                     {row["Pct_Revolvers"]:.0%} rev · ${row["Saldo_USD"]:,.0f} · CO {co_pct:.1f}%
                 </div>
             </div>
@@ -209,7 +210,7 @@ for i, (_, row) in enumerate(df_excluidas.iterrows()):
             border-radius:12px;padding:14px;text-align:center;">
             <div style="font-family:'DM Sans';font-weight:700;color:{color}90;font-size:0.95rem;margin-bottom:6px;">{b}</div>
             <div class="badge-excluida">FUERA DE ALCANCE</div>
-            <div style="font-family:'JetBrains Mono';font-size:0.8rem;color:#94a3b8;margin-top:8px;">
+            <div style="font-family:'IBM Plex Mono';font-size:0.8rem;color:#cbd5e1;margin-top:8px;">
                 {row["Pct_Revolvers"]:.0%} revolvers · ${row["Saldo_USD"]:,.0f} · Totaleros
             </div>
         </div>""", unsafe_allow_html=True)
@@ -251,25 +252,35 @@ fig.add_trace(go.Bar(
     marker_color=[BAND_COLORS[b] for b in df_analisis["Banda"]],
     text=df_analisis["LTV_USD"].apply(lambda x: f"${x:,.0f}"),
     textposition="outside",
-    textfont=dict(size=14, family="JetBrains Mono", color="#f1f5f9"),
+    textfont=dict(size=14, family="IBM Plex Mono", color="#f1f5f9"),
     opacity=0.9,
 ))
 fig.add_trace(go.Scatter(
     name="Hurdle (rendimiento mínimo exigido)",
     x=df_analisis["Banda"], y=df_analisis["Hurdle_USD"],
-    mode="markers+lines+text",
-    marker=dict(size=12, color="#fbbf24", symbol="diamond", line=dict(width=2, color="#1e293b")),
+    mode="markers+lines",
+    marker=dict(size=14, color="#fbbf24", symbol="diamond", line=dict(width=2, color="#1e293b")),
     line=dict(color="#fbbf24", width=3, dash="dash"),
-    text=df_analisis["Hurdle_USD"].apply(lambda x: f"${x:,.0f}"),
-    textposition="top center",
-    textfont=dict(size=13, family="JetBrains Mono", color="#fbbf24"),
+    hovertemplate="Hurdle: $%{y:,.0f}<extra></extra>",
 ))
+# Add hurdle annotations manually to avoid overlap
+for _, row in df_analisis.iterrows():
+    ltv_r = round(row["LTV_USD"])
+    hur_r = round(row["Hurdle_USD"])
+    # If values are close, put hurdle label below; otherwise above
+    y_offset = -25 if abs(ltv_r - hur_r) < 200 else 20
+    fig.add_annotation(
+        x=row["Banda"], y=hur_r,
+        text=f"${hur_r:,}", showarrow=False,
+        font=dict(size=13, family="IBM Plex Mono", color="#fbbf24"),
+        yshift=y_offset,
+    )
 fig.update_layout(
     yaxis_title="USD (valor presente a 60 meses)", xaxis_title="", height=540,
     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5,
-        font=dict(family="DM Sans", size=13, color="#cbd5e1"), bgcolor="rgba(0,0,0,0)"),
+        font=dict(family="DM Sans", size=13, color="#e2e8f0"), bgcolor="rgba(0,0,0,0)"),
     plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="DM Sans", size=13, color="#cbd5e1"),
+    font=dict(family="DM Sans", size=13, color="#e2e8f0"),
     xaxis=dict(tickfont=dict(size=14, color="#f1f5f9")),
     yaxis=dict(gridcolor="rgba(71,85,105,0.3)", zerolinecolor="rgba(71,85,105,0.5)", tickprefix="$", tickformat=",", tickfont=dict(size=12)),
     margin=dict(t=60, b=40),
@@ -335,7 +346,7 @@ for i, (_, row) in enumerate(df_ch_analisis.iterrows()):
             border-radius:14px;padding:18px 16px;text-align:center;min-height:320px;">
             <div style="font-family:'DM Sans';font-weight:700;color:{color};font-size:1.05rem;margin-bottom:10px;">{banda}</div>
             {badge_html}
-            <div style="font-family:'JetBrains Mono';font-size:0.85rem;color:#cbd5e1;line-height:2;margin-top:12px;">
+            <div style="font-family:'IBM Plex Mono';font-size:0.85rem;color:#cbd5e1;line-height:2;margin-top:12px;">
                 <div>Pago actual <span style="color:#f1f5f9;font-weight:600;">${pago_a:,.0f}/mes</span></div>
                 <div>Pago nuevo <span style="color:#fbbf24;font-weight:600;">${pago_n:,.0f}/mes</span></div>
                 <div>Choque <span style="color:#f87171;font-weight:700;">{mult:.1f}×</span></div>
@@ -388,7 +399,7 @@ for tab, dur in zip(tabs, [3, 6, 9, 12]):
             zmid=0,
             text=np.round(pv.values, 0).astype(int).astype(str),
             texttemplate="%{text}",
-            textfont=dict(size=12, family="JetBrains Mono", color="#f1f5f9"),
+            textfont=dict(size=12, family="IBM Plex Mono", color="#f1f5f9"),
             colorbar=dict(title=dict(text="Margen ($)", font=dict(color="#cbd5e1", size=13)),
                 tickfont=dict(color="#cbd5e1", size=11), tickprefix="$", bgcolor="rgba(0,0,0,0)"),
             hovertemplate="<b>%{x}</b><br>Tope: %{y}<br>Margen: $%{z:,.0f}<extra></extra>",
