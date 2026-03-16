@@ -152,7 +152,7 @@ st.markdown("---")
 with st.sidebar:
     st.markdown("### ⚙️ Escenario Regulatorio")
     tope = st.slider("Nivel del tope regulatorio (%)", 10.0, 30.0, 20.0, 0.5,
-        help="Tasa m\u00E1xima permitida durante la vigencia del tope.")
+        help="Propuesta Trump: 10%. Propuesta Sanders-Hawley (S.381): 10%. APR promedio actual de la industria: 21.39%. Un tope por debajo del APR de una banda comprime su margen financiero.")
     duracion_tope = st.radio("\u23F1\uFE0F Duraci\u00F3n del tope", [3, 6, 9, 12], index=1,
         format_func=lambda x: f"{x} meses", horizontal=True)
 
@@ -160,8 +160,15 @@ with st.sidebar:
     st.markdown("### \U0001F39A\uFE0F Spreads (bps sobre Rf)")
     st.caption(f"Rf = {datos_macro['Treasury10Y_pct']:.2f}%")
     spreads_bps = {}
+    spread_helps = {
+        "Deep Subprime": "Default 800 bps. Hurdle impl\u00EDcito: 12.1%. Refleja la prima de riesgo m\u00E1s alta del portafolio. Un banco Tier 1 exige mayor rendimiento para compensar el charge-off de ~10%.",
+        "Subprime": "Default 650 bps. Hurdle impl\u00EDcito: 10.6%. Riesgo alto pero menor que Deep Subprime. El banco a\u00FAn exige prima significativa.",
+        "Near-Prime": "Default 450 bps. Hurdle impl\u00EDcito: 8.6%. Segmento en transici\u00F3n con riesgo moderado. Prima de riesgo intermedia.",
+        "Prime": "Default 300 bps. Hurdle impl\u00EDcito: 7.1%. Segmento est\u00E1ndar, menor prima. Es la banda m\u00E1s resiliente del portafolio.",
+    }
     for b in BANDAS_ANALISIS:
-        spreads_bps[b] = st.slider(b, 0, 1000, SPREAD_DEFAULTS_BPS[b], 25, key=f"sp_{b}")
+        spreads_bps[b] = st.slider(b, 0, 1000, SPREAD_DEFAULTS_BPS[b], 25, key=f"sp_{b}",
+            help=spread_helps[b])
     for b in BANDAS_EXCLUIDAS:
         spreads_bps[b] = SPREAD_DEFAULTS_BPS[b]
 
@@ -169,9 +176,15 @@ with st.sidebar:
     st.markdown("### \U0001F4CA Multiplicadores Charge-Off")
     st.caption(f"Base FRED: {datos_macro['ChargeOff_pct']:.2f}%")
     mult_co = {}
+    co_helps = {
+        "Deep Subprime": f"Default 2.5\u00D7 = {datos_macro['ChargeOff_pct']*2.5:.1f}% charge-off. Un banco Tier 1 t\u00EDpicamente no origina en este segmento. B\u00E1jalo a 2.0\u00D7 para simular mejor gesti\u00F3n de riesgo.",
+        "Subprime": f"Default 2.0\u00D7 = {datos_macro['ChargeOff_pct']*2.0:.1f}% charge-off. Alto riesgo pero manejable con pol\u00EDticas de cobranza agresivas.",
+        "Near-Prime": f"Default 1.4\u00D7 = {datos_macro['ChargeOff_pct']*1.4:.1f}% charge-off. Riesgo moderado. Clientes reconstruyendo historial o j\u00F3venes con historial corto.",
+        "Prime": f"Default 0.8\u00D7 = {datos_macro['ChargeOff_pct']*0.8:.1f}% charge-off. Bajo riesgo. Es el segmento que absorbe mejor los topes de tasa.",
+    }
     for b in BANDAS_ANALISIS:
         mult_co[b] = st.slider(f"{b}", 0.1, 4.0, MULT_CHARGEOFF_DEFAULTS[b], 0.1, key=f"mc_{b}",
-            help=f"Default: {MULT_CHARGEOFF_DEFAULTS[b]:.1f}\u00D7")
+            help=co_helps[b])
     for b in BANDAS_EXCLUIDAS:
         mult_co[b] = MULT_CHARGEOFF_DEFAULTS[b]
 
@@ -180,9 +193,9 @@ with st.sidebar:
     plazo_amort = st.radio("Plazo amortizaci\u00F3n", [12, 24, 36, 48, 60], index=2,
         format_func=lambda x: f"{x} meses", horizontal=True)
     sensibilidad_choque = st.slider("Sensibilidad al choque", 0.01, 0.20, 0.05, 0.01,
-        help="Puntos adicionales de P(default) por cada m\u00FAltiplo de choque")
+        help="Controla cu\u00E1ntos clientes adicionales caen en default por cada m\u00FAltiplo de choque. Ejemplo: con sensibilidad 0.05 y choque de 5\u00D7, el default adicional es 20 puntos porcentuales sobre la tasa base.")
     severidad = st.slider("Severidad de p\u00E9rdida (%)", 20.0, 100.0, 80.0, 5.0,
-        help="% del saldo que se pierde si el cliente entra en default")
+        help="Complemento de la tasa de recuperaci\u00F3n hist\u00F3rica. Con 80% de severidad, el banco solo recupera 20 centavos por d\u00F3lar en default. Un Tier 1 con buena cobranza opera entre 50-60% de severidad.")
 
 # ══════════════════════════════════════
 # CÁLCULO
