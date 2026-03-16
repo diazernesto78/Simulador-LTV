@@ -13,7 +13,7 @@ from modelo import (
     SPREAD_DEFAULTS_BPS, MULT_CHARGEOFF_DEFAULTS,
 )
 
-st.set_page_config(page_title="Simulador LTV — Topes de Tasa", page_icon="💳", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Simulador LTV — Topes de Tasa", page_icon="💳", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
 <style>
@@ -116,42 +116,42 @@ st.caption(f"Datos FRED · Última observación: {datos_macro['fecha']}")
 st.markdown("---")
 
 # ══════════════════════════════════════
-# 1. INPUTS
+# 1. INPUTS — EN SIDEBAR
 # ══════════════════════════════════════
-st.markdown('<div class="section-title">⚙️ Escenario Regulatorio</div>', unsafe_allow_html=True)
-st.markdown("")
-
-col_esc1, col_esc2 = st.columns([3, 1])
-with col_esc1:
+with st.sidebar:
+    st.markdown("### ⚙️ Escenario Regulatorio")
     tope = st.slider("Nivel del tope regulatorio (%)", 10.0, 30.0, 20.0, 0.5,
-        help="Tasa máxima permitida durante la vigencia del tope.")
-with col_esc2:
-    duracion_tope = st.selectbox("⏱️ DURACIÓN DEL TOPE", [3, 6, 9, 12], index=1,
+        help="Tasa m\u00E1xima permitida durante la vigencia del tope.")
+    duracion_tope = st.selectbox("\u23F1\uFE0F DURACI\u00D3N DEL TOPE", [3, 6, 9, 12], index=1,
         format_func=lambda x: f"{x} meses")
 
-st.markdown("")
-with st.expander("🎚️ Spreads por banda (bps sobre Rf) — click para ajustar", expanded=False):
-    st.caption(f"Rf actual = {datos_macro['Treasury10Y_pct']:.2f}%. El spread determina el hurdle rate de cada banda.")
-    sc = st.columns(4)
+    st.markdown("---")
+    st.markdown("### \U0001F39A\uFE0F Spreads (bps sobre Rf)")
+    st.caption(f"Rf = {datos_macro['Treasury10Y_pct']:.2f}%")
     spreads_bps = {}
-    for i, b in enumerate(BANDAS_ANALISIS):
-        with sc[i]:
-            spreads_bps[b] = st.slider(b, 0, 1000, SPREAD_DEFAULTS_BPS[b], 25, key=f"sp_{b}")
+    for b in BANDAS_ANALISIS:
+        spreads_bps[b] = st.slider(b, 0, 1000, SPREAD_DEFAULTS_BPS[b], 25, key=f"sp_{b}")
     for b in BANDAS_EXCLUIDAS:
         spreads_bps[b] = SPREAD_DEFAULTS_BPS[b]
 
-with st.expander("📊 Multiplicadores de Charge-Off por banda — click para calibrar", expanded=False):
-    st.caption(f"Charge-off base FRED: {datos_macro['ChargeOff_pct']:.2f}%. El multiplicador escala el quebranto por banda. Ajústalo para simular diferentes perfiles de riesgo.")
-    mc = st.columns(4)
+    st.markdown("---")
+    st.markdown("### \U0001F4CA Multiplicadores Charge-Off")
+    st.caption(f"Base FRED: {datos_macro['ChargeOff_pct']:.2f}%")
     mult_co = {}
-    for i, b in enumerate(BANDAS_ANALISIS):
-        with mc[i]:
-            mult_co[b] = st.slider(f"{b}", 0.1, 4.0, MULT_CHARGEOFF_DEFAULTS[b], 0.1, key=f"mc_{b}",
-                help=f"Default: {MULT_CHARGEOFF_DEFAULTS[b]:.1f}× → {datos_macro['ChargeOff_pct']*MULT_CHARGEOFF_DEFAULTS[b]:.1f}% CO")
+    for b in BANDAS_ANALISIS:
+        mult_co[b] = st.slider(f"{b}", 0.1, 4.0, MULT_CHARGEOFF_DEFAULTS[b], 0.1, key=f"mc_{b}",
+            help=f"Default: {MULT_CHARGEOFF_DEFAULTS[b]:.1f}\u00D7")
     for b in BANDAS_EXCLUIDAS:
         mult_co[b] = MULT_CHARGEOFF_DEFAULTS[b]
 
-st.markdown("---")
+    st.markdown("---")
+    st.markdown("### \U0001F4A5 Choque de Pago")
+    plazo_amort = st.selectbox("Plazo amortizaci\u00F3n", [12, 24, 36, 48, 60], index=2,
+        format_func=lambda x: f"{x} meses")
+    sensibilidad_choque = st.slider("Sensibilidad al choque", 0.01, 0.20, 0.05, 0.01,
+        help="Puntos adicionales de P(default) por cada m\u00FAltiplo de choque")
+    severidad = st.slider("Severidad de p\u00E9rdida (%)", 20.0, 100.0, 80.0, 5.0,
+        help="% del saldo que se pierde si el cliente entra en default")
 
 # ══════════════════════════════════════
 # CÁLCULO
@@ -297,21 +297,11 @@ from motor_choque import calcular_choque_todas_bandas
 
 st.markdown('<div class="section-title">💥 Choque de Pago por Migración</div>', unsafe_allow_html=True)
 st.markdown(
-    '<span style="color:#cbd5e1;font-size:1rem;">'
-    'Si un cliente migra de revolvente a pago fijo, ¿cuánto sube su pago mensual y cuántos caen en default?'
+    '<span style="color:#e2e8f0;font-size:1rem;">'
+    'Si un cliente migra de revolvente a pago fijo, ¿cuánto sube su pago mensual y cuántos caen en default? '
+    'Ajusta los parámetros de choque en el panel izquierdo.'
     '</span>', unsafe_allow_html=True)
 st.markdown("")
-
-ch_c1, ch_c2, ch_c3 = st.columns(3)
-with ch_c1:
-    plazo_amort = st.selectbox("Plazo de amortización", [12, 24, 36, 48, 60], index=2,
-        format_func=lambda x: f"{x} meses")
-with ch_c2:
-    sensibilidad_choque = st.slider("Sensibilidad al choque", 0.01, 0.20, 0.05, 0.01,
-        help="Puntos adicionales de probabilidad de default por cada múltiplo de choque de pago arriba de 1×")
-with ch_c3:
-    severidad = st.slider("Severidad de pérdida (%)", 20.0, 100.0, 80.0, 5.0,
-        help="Porcentaje del saldo que se pierde si el cliente entra en default tras la migración")
 
 df_choque = calcular_choque_todas_bandas(df_resultados, df_cfpb, tope, plazo_amort, sensibilidad_choque, severidad)
 df_ch_analisis = df_choque[df_choque["Decision_LTV"].isin(["MANTENER", "MIGRAR"])]
