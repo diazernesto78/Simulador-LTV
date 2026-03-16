@@ -171,7 +171,10 @@ for i, (_, row) in enumerate(df_analisis.iterrows()):
     color = BAND_COLORS[banda]
     badge = "badge-mantener" if row["Decision"] == "MANTENER" else "badge-migrar"
     badge_text = "✅ MANTENER" if row["Decision"] == "MANTENER" else "🔴 MIGRAR"
-    mc = "#4ade80" if row["Margen_USD"] >= 0 else "#f87171"
+    ltv_show = round(row["LTV_USD"])
+    hur_show = round(row["Hurdle_USD"])
+    mar_show = ltv_show - hur_show
+    mc = "#4ade80" if mar_show >= 0 else "#f87171"
     co_pct = row["ChargeOff_Banda_pct"]
 
     with card_cols[i]:
@@ -181,9 +184,9 @@ for i, (_, row) in enumerate(df_analisis.iterrows()):
             <div style="font-family:'DM Sans';font-weight:700;color:{color};font-size:1.05rem;margin-bottom:10px;">{banda}</div>
             <div class="{badge}" style="margin-bottom:14px;">{badge_text}</div>
             <div style="font-family:'JetBrains Mono';font-size:0.95rem;color:#cbd5e1;line-height:2.2;">
-                <div>LTV <span style="color:#f1f5f9;font-weight:600;">${row["LTV_USD"]:,.0f}</span></div>
-                <div>Hurdle <span style="color:#f1f5f9;font-weight:600;">${row["Hurdle_USD"]:,.0f}</span></div>
-                <div>Margen <span style="color:{mc};font-weight:700;">${row["Margen_USD"]:,.0f}</span></div>
+                <div>LTV <span style="color:#f1f5f9;font-weight:600;">${ltv_show:,.0f}</span></div>
+                <div>Hurdle <span style="color:#f1f5f9;font-weight:600;">${hur_show:,.0f}</span></div>
+                <div>Margen <span style="color:{mc};font-weight:700;">${mar_show:,.0f}</span></div>
                 <div style="margin-top:6px;font-size:0.8rem;color:#94a3b8;">
                     {row["Pct_Revolvers"]:.0%} rev · ${row["Saldo_USD"]:,.0f} · CO {co_pct:.1f}%
                 </div>
@@ -223,9 +226,9 @@ st.markdown("""
 with st.expander("📋 Tabla detallada — todas las bandas", expanded=False):
     dd = df_resultados.copy()
     dd["Decisión"] = dd["Decision"].apply(lambda d: "✅ MANTENER" if d == "MANTENER" else ("🔴 MIGRAR" if d == "MIGRAR" else "⚪ FUERA DE ALCANCE"))
-    dd["LTV ($)"] = dd["LTV_USD"].apply(lambda x: f"${x:,.0f}")
-    dd["Hurdle ($)"] = dd["Hurdle_USD"].apply(lambda x: f"${x:,.0f}")
-    dd["Margen ($)"] = dd["Margen_USD"].apply(lambda x: f"${x:,.0f}")
+    dd["LTV ($)"] = dd["LTV_USD"].apply(lambda x: f"${round(x):,}")
+    dd["Hurdle ($)"] = dd["Hurdle_USD"].apply(lambda x: f"${round(x):,}")
+    dd["Margen ($)"] = dd.apply(lambda r: f"${round(r['LTV_USD']) - round(r['Hurdle_USD']):,}", axis=1)
     dd["Tasa Ef."] = dd["Tasa_Efectiva_M1_pct"].apply(lambda x: f"{x:.1f}%")
     dd["r Desc."] = dd["r_Descuento_pct"].apply(lambda x: f"{x:.2f}%")
     dd["CO (%)"] = dd["ChargeOff_Banda_pct"].apply(lambda x: f"{x:.2f}%")
