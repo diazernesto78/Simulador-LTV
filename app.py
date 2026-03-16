@@ -37,8 +37,15 @@ st.markdown("""
     .stTabs [aria-selected="true"] { background: rgba(59, 130, 246, 0.25) !important; color: #60a5fa !important; }
 
     .stSlider > div > div > div > div { background: #3b82f6 !important; }
+    .stSlider label { color: #e2e8f0 !important; font-size: 0.95rem !important; font-weight: 600 !important; }
+    .stSlider [data-testid="stTickBarMin"], .stSlider [data-testid="stTickBarMax"] { color: #94a3b8 !important; }
     .stDataFrame { border-radius: 12px; overflow: hidden; }
     hr { border-color: rgba(71, 85, 105, 0.3) !important; margin: 2rem 0 !important; }
+
+    /* ALL labels and text visible */
+    label, .stTextInput label, .stSlider label, .stNumberInput label { color: #e2e8f0 !important; font-size: 0.95rem !important; }
+    .stMarkdown p { color: #cbd5e1 !important; }
+    [data-testid="stWidgetLabel"] p { color: #e2e8f0 !important; font-weight: 500 !important; }
 
     /* Selectbox - VISIBLE */
     .stSelectbox > div > div {
@@ -51,10 +58,11 @@ st.markdown("""
     .stSelectbox label { color: #fbbf24 !important; font-weight: 600 !important; font-size: 1rem !important; }
 
     /* Expander */
-    .streamlit-expanderHeader { font-size: 1.05rem !important; color: #cbd5e1 !important; font-weight: 600 !important; }
+    .streamlit-expanderHeader { font-size: 1.05rem !important; color: #f1f5f9 !important; font-weight: 600 !important; }
+    [data-testid="stExpander"] summary span { color: #f1f5f9 !important; }
 
-    /* Caption - more visible */
-    .stCaption p { color: #94a3b8 !important; font-size: 0.9rem !important; }
+    /* Caption - bright */
+    .stCaption p { color: #cbd5e1 !important; font-size: 0.92rem !important; }
 
     /* Hero */
     .hero-badge { display: inline-block; background: rgba(59, 130, 246, 0.15); color: #60a5fa; padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; font-family: 'DM Sans', sans-serif; margin-bottom: 14px; letter-spacing: 0.5px; }
