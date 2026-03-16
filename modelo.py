@@ -6,6 +6,11 @@ Contiene:
 - Motor LTV a 60 meses con descuento por banda
 - Motor de decisión (LTV vs hurdle)
 - Motor de sensibilidades (nivel tope × duración)
+
+Nota: El modelo mide exclusivamente el componente de ingresos por intereses
+revolventes. Las bandas Prime Plus y Superprime quedan fuera del análisis
+de decisión porque su rentabilidad depende de ingresos transaccionales
+(interchange, anualidad) que no están disponibles por banda en fuentes públicas.
 """
 
 import pandas as pd
@@ -27,9 +32,18 @@ BANDAS = [
     "Superprime",
 ]
 
-# Multiplicadores de charge-off por banda sobre la tasa agregada FRED.
-# Calibración basada en dispersión relativa de pérdida neta reportada
-# por CFPB (2025) y Fed (CORCCT100S) para portafolios Tier 1.
+# Bandas incluidas en el análisis de decisión mantener/migrar.
+# Prime Plus y Superprime se excluyen: con <50% de revolvers,
+# su LTV por intereses no refleja la rentabilidad real de la cuenta.
+BANDAS_ANALISIS = [
+    "Deep Subprime",
+    "Subprime",
+    "Near-Prime",
+    "Prime",
+]
+
+BANDAS_EXCLUIDAS = ["Prime Plus", "Superprime"]
+
 MULT_CHARGEOFF = {
     "Deep Subprime": 2.50,
     "Subprime":      2.00,
@@ -39,7 +53,6 @@ MULT_CHARGEOFF = {
     "Superprime":    0.15,
 }
 
-# Spreads default (bps) sobre Rf para tasa de descuento por banda.
 SPREAD_DEFAULTS_BPS = {
     "Deep Subprime": 800,
     "Subprime":      650,
@@ -57,7 +70,6 @@ DATOS_DIR = Path(__file__).parent / "datos"
 # ──────────────────────────────────────────────
 
 def cargar_datos_macro(path: Path | None = None) -> dict:
-    """Lee datos_macro_consolidados.xlsx y devuelve última observación de cada variable."""
     if path is None:
         path = DATOS_DIR / "datos_macro_consolidados.xlsx"
     df = pd.read_excel(path, sheet_name="Series_Diarias")
@@ -72,7 +84,6 @@ def cargar_datos_macro(path: Path | None = None) -> dict:
 
 
 def cargar_datos_cfpb(path: Path | None = None) -> pd.DataFrame:
-    """Lee CFPB_datos_por_banda_FICO.xlsx y devuelve DataFrame indexado por banda."""
     if path is None:
         path = DATOS_DIR / "CFPB_datos_por_banda_FICO.xlsx"
     df = pd.read_excel(path, sheet_name="Datos_FICO")
@@ -85,7 +96,6 @@ def cargar_datos_cfpb(path: Path | None = None) -> pd.DataFrame:
 # ──────────────────────────────────────────────
 
 def calcular_tasa_efectiva(apr_banda: float, tope: float, duracion_tope: int, mes: int) -> float:
-    """Tasa efectiva anual para un mes dado, limitada por el tope durante su vigencia."""
     if mes <= duracion_tope:
         return min(apr_banda, tope)
     return apr_banda
@@ -101,17 +111,7 @@ def calcular_ltv_banda(
     tope: float,
     duracion_tope: int,
 ) -> dict:
-    """
-    Calcula LTV, hurdle y flujos netos para una banda a 60 meses.
-
-    Retorna dict con:
-        ltv: valor presente de flujos netos
-        hurdle: valor presente del rendimiento mínimo exigido
-        flujos_netos: lista de 60 flujos netos nominales
-        flujos_descontados: lista de 60 flujos descontados
-        decision: 'MANTENER' o 'MIGRAR'
-    """
-    r_m = r_descuento / 100 / 12  # tasa de descuento mensual
+    r_m = r_descuento / 100 / 12
 
     flujos_netos = []
     flujos_descontados = []
@@ -133,14 +133,12 @@ def calcular_ltv_banda(
 
     ltv = sum(flujos_descontados)
     hurdle = sum(hurdle_flujos)
-    decision = "MANTENER" if ltv >= hurdle else "MIGRAR"
 
     return {
         "ltv": ltv,
         "hurdle": hurdle,
         "flujos_netos": flujos_netos,
         "flujos_descontados": flujos_descontados,
-        "decision": decision,
     }
 
 
@@ -151,18 +149,6 @@ def calcular_todas_bandas(
     duracion_tope: int,
     spreads_bps: dict,
 ) -> pd.DataFrame:
-    """
-    Ejecuta el motor LTV para las 6 bandas FICO.
-
-    Parámetros:
-        datos_macro: dict con última observación macro
-        df_cfpb: DataFrame CFPB indexado por banda
-        tope: nivel del tope regulatorio (%)
-        duracion_tope: duración del tope en meses
-        spreads_bps: dict {banda: spread en bps}
-
-    Retorna DataFrame con resultados por banda.
-    """
     rf = datos_macro["Treasury10Y_pct"]
     fondeo = datos_macro["Fondeo_pct"]
     chargeoff_base = datos_macro["ChargeOff_pct"]
@@ -175,19 +161,20 @@ def calcular_todas_bandas(
         pct_rev = float(row["Pct_Revolvers_2024"])
         apr = float(row["APR_Promedio_NuevasCuentas_2024_pct"])
         chargeoff = chargeoff_base * MULT_CHARGEOFF[banda]
-        spread = spreads_bps[banda] / 100  # bps a porcentaje
+        spread = spreads_bps[banda] / 100
         r_desc = rf + spread
 
         res = calcular_ltv_banda(
-            saldo=saldo,
-            pct_revolvers=pct_rev,
-            apr_banda=apr,
-            chargeoff_banda=chargeoff,
-            fondeo=fondeo,
-            r_descuento=r_desc,
-            tope=tope,
-            duracion_tope=duracion_tope,
+            saldo=saldo, pct_revolvers=pct_rev, apr_banda=apr,
+            chargeoff_banda=chargeoff, fondeo=fondeo, r_descuento=r_desc,
+            tope=tope, duracion_tope=duracion_tope,
         )
+
+        # Decisión solo para bandas en análisis
+        if banda in BANDAS_ANALISIS:
+            decision = "MANTENER" if res["ltv"] >= res["hurdle"] else "MIGRAR"
+        else:
+            decision = "FUERA DE ALCANCE"
 
         resultados.append({
             "Banda": banda,
@@ -200,7 +187,7 @@ def calcular_todas_bandas(
             "LTV_USD": round(res["ltv"], 2),
             "Hurdle_USD": round(res["hurdle"], 2),
             "Margen_USD": round(res["ltv"] - res["hurdle"], 2),
-            "Decision": res["decision"],
+            "Decision": decision,
         })
 
     return pd.DataFrame(resultados)
@@ -217,12 +204,6 @@ def calcular_sensibilidades(
     niveles_tope: list[float] | None = None,
     duraciones: list[int] | None = None,
 ) -> pd.DataFrame:
-    """
-    Calcula la decisión (MANTENER/MIGRAR) para cada combinación de
-    nivel de tope × duración × banda.
-
-    Retorna DataFrame con columnas: Tope_pct, Duracion_meses, Banda, LTV, Hurdle, Decision
-    """
     if niveles_tope is None:
         niveles_tope = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
     if duraciones is None:
