@@ -43,6 +43,12 @@ st.markdown("""
         background: rgba(59, 130, 246, 0.3) !important;
         border-color: #3b82f6 !important;
     }
+    [data-testid="stSidebar"] .stTooltipIcon svg { color: #60a5fa !important; }
+    /* Tooltip popup */
+    [data-testid="stTooltipContent"] { background: #1e293b !important; color: #ffffff !important; border: 1px solid #3b82f6 !important; }
+    [data-testid="stTooltipContent"] p { color: #ffffff !important; }
+    div[data-baseweb="tooltip"] div { background: #1e293b !important; color: #ffffff !important; }
+    div[data-baseweb="tooltip"] div p { color: #ffffff !important; }
     [data-testid="stSidebar"] hr { border-color: rgba(71, 85, 105, 0.5) !important; }
 
     /* Typography - bigger, clearer, WHITE not grey */
