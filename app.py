@@ -114,6 +114,13 @@ st.markdown("""
 
     .note-box { background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 12px; padding: 18px 22px; margin: 16px 0; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: #e2e8f0; line-height: 1.7; }
     .note-box strong { color: #60a5fa; }
+
+    /* Info tooltip */
+    .info-tip { position: relative; display: inline-block; cursor: help; margin-left: 8px; vertical-align: middle; }
+    .info-tip .info-icon { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: rgba(59,130,246,0.2); color: #60a5fa; font-size: 0.8rem; font-weight: 700; font-family: 'DM Sans', sans-serif; }
+    .info-tip .info-text { visibility: hidden; opacity: 0; position: absolute; z-index: 999; bottom: 130%; left: 50%; transform: translateX(-50%); width: 320px; background: #1e293b; color: #f1f5f9; border: 1px solid #3b82f6; border-radius: 10px; padding: 12px 16px; font-size: 0.85rem; font-weight: 400; line-height: 1.6; font-family: 'DM Sans', sans-serif; box-shadow: 0 8px 24px rgba(0,0,0,0.4); transition: opacity 0.2s; }
+    .info-tip:hover .info-text { visibility: visible; opacity: 1; }
+    .info-tip .info-text::after { content: ''; position: absolute; top: 100%; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -137,13 +144,35 @@ st.markdown('<div class="hero-badge">EGADE BUSINESS SCHOOL · PROYECTO FINAL</di
 st.markdown('<div class="hero-title">💳 Simulador LTV — Topes de Tasa</div>', unsafe_allow_html=True)
 st.markdown('<div class="hero-subtitle">¿Qué bandas FICO mantienen un LTV sostenible en crédito revolvente bajo un tope regulatorio temporal, y cuáles deberían migrar a un esquema de pago fijo?</div>', unsafe_allow_html=True)
 st.markdown("")
-st.markdown("---")
-kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-kpi1.metric("APR Agregado", f"{datos_macro['APR_pct']:.2f}%")
-kpi2.metric("Charge-Off Top 100", f"{datos_macro['ChargeOff_pct']:.2f}%")
-kpi3.metric("Treasury 10Y (Rf)", f"{datos_macro['Treasury10Y_pct']:.2f}%")
-kpi4.metric("Fondeo SOFR", f"{datos_macro['Fondeo_pct']:.2f}%")
-st.caption(f"Datos FRED · Última observación: {datos_macro['fecha']}")
+st.markdown("""
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:8px;">
+    <div style="background:rgba(30,41,59,0.7);border:1px solid rgba(71,85,105,0.4);border-radius:12px;padding:18px 22px;">
+        <div style="font-family:'DM Sans';font-size:0.85rem;color:#e2e8f0;text-transform:uppercase;letter-spacing:0.5px;">APR Agregado
+            <span class="info-tip"><span class="info-icon">i</span><span class="info-text">Tasa de inter\u00E9s promedio de tarjetas de cr\u00E9dito en EE.UU. (serie FRED TERMCBCCALLNS). Es el benchmark del mercado. Cada banda tiene su propio APR seg\u00FAn datos del CFPB.</span></span>
+        </div>
+        <div style="font-family:'IBM Plex Mono';font-size:2rem;color:#60a5fa;margin-top:6px;">""" + f"{datos_macro['APR_pct']:.2f}%" + """</div>
+    </div>
+    <div style="background:rgba(30,41,59,0.7);border:1px solid rgba(71,85,105,0.4);border-radius:12px;padding:18px 22px;">
+        <div style="font-family:'DM Sans';font-size:0.85rem;color:#e2e8f0;text-transform:uppercase;letter-spacing:0.5px;">Charge-Off Top 100
+            <span class="info-tip"><span class="info-icon">i</span><span class="info-text">Tasa de quebranto promedio de los 100 bancos m\u00E1s grandes por activos (serie FRED CORCCT100S). Se diferencia por banda usando multiplicadores ajustables en el panel izquierdo.</span></span>
+        </div>
+        <div style="font-family:'IBM Plex Mono';font-size:2rem;color:#60a5fa;margin-top:6px;">""" + f"{datos_macro['ChargeOff_pct']:.2f}%" + """</div>
+    </div>
+    <div style="background:rgba(30,41,59,0.7);border:1px solid rgba(71,85,105,0.4);border-radius:12px;padding:18px 22px;">
+        <div style="font-family:'DM Sans';font-size:0.85rem;color:#e2e8f0;text-transform:uppercase;letter-spacing:0.5px;">Treasury 10Y (Rf)
+            <span class="info-tip"><span class="info-icon">i</span><span class="info-text">Tasa libre de riesgo. Se usa para construir el hurdle rate de cada banda: Rf + spread. Representa el costo de oportunidad del banco (podr\u00EDa comprar Treasuries sin riesgo).</span></span>
+        </div>
+        <div style="font-family:'IBM Plex Mono';font-size:2rem;color:#60a5fa;margin-top:6px;">""" + f"{datos_macro['Treasury10Y_pct']:.2f}%" + """</div>
+    </div>
+    <div style="background:rgba(30,41,59,0.7);border:1px solid rgba(71,85,105,0.4);border-radius:12px;padding:18px 22px;">
+        <div style="font-family:'DM Sans';font-size:0.85rem;color:#e2e8f0;text-transform:uppercase;letter-spacing:0.5px;">Fondeo SOFR
+            <span class="info-tip"><span class="info-icon">i</span><span class="info-text">Costo de fondeo del banco. Se resta como gasto financiero en el flujo neto mensual del Motor 1. No se usa en el hurdle rate (eso evita doble conteo, ya que el flujo ya descuenta el fondeo).</span></span>
+        </div>
+        <div style="font-family:'IBM Plex Mono';font-size:2rem;color:#60a5fa;margin-top:6px;">""" + f"{datos_macro['Fondeo_pct']:.2f}%" + """</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+st.caption(f"Datos FRED \u00B7 \u00DAltima observaci\u00F3n: {datos_macro['fecha']}")
 st.markdown("---")
 
 # ══════════════════════════════════════
@@ -207,7 +236,7 @@ df_excluidas = df_resultados[df_resultados["Decision"] == "FUERA DE ALCANCE"]
 # ══════════════════════════════════════
 # 2. DECISIÓN POR BANDA
 # ══════════════════════════════════════
-st.markdown('<div class="section-title">📊 Decisión por Banda FICO</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">📊 Decisión por Banda FICO <span class="info-tip"><span class="info-icon">i</span><span class="info-text">Cada card muestra el resultado del Motor 1 (LTV) y Motor 2 (decisión) para una banda de puntaje FICO. Si el LTV supera el hurdle, la banda se MANTIENE como revolvente. Si no, se marca para MIGRAR a pago fijo. Las bandas Prime Plus y Superprime están fuera del alcance porque su ingreso viene de interchange, no de intereses.</span></span></div>', unsafe_allow_html=True)
 st.markdown("")
 card_cols = st.columns(4)
 
@@ -286,7 +315,7 @@ st.markdown("---")
 # ══════════════════════════════════════
 # 3. GRÁFICA LTV vs HURDLE
 # ══════════════════════════════════════
-st.markdown('<div class="section-title">📈 LTV vs Hurdle por Banda</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">📈 LTV vs Hurdle por Banda <span class="info-tip"><span class="info-icon">i</span><span class="info-text">La barra muestra el valor presente de los flujos netos a 60 meses (LTV). El diamante amarillo muestra el rendimiento m\u00EDnimo que el banco exige (hurdle = Rf + spread). Dentro de cada barra se muestra el margen: positivo (verde) = viable, negativo (rojo) = migrar.</span></span></div>', unsafe_allow_html=True)
 st.markdown("")
 
 fig = go.Figure()
@@ -339,7 +368,7 @@ st.markdown("---")
 # ══════════════════════════════════════
 from motor_choque import calcular_choque_todas_bandas
 
-st.markdown('<div class="section-title">💥 Choque de Pago por Migración</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">💥 Choque de Pago por Migración <span class="info-tip"><span class="info-icon">i</span><span class="info-text">Motor 3: calcula el costo real de migrar a un cliente de revolvente a pago fijo. El choque es el m\u00FAltiplo entre el pago nuevo (amortizaci\u00F3n) y el pago actual (m\u00EDnimo). A mayor choque, m\u00E1s clientes caen en default. La decisi\u00F3n compara: \u00BFes m\u00E1s barato mantener con margen negativo o migrar asumiendo el choque?</span></span></div>', unsafe_allow_html=True)
 st.markdown(
     '<span style="color:#e2e8f0;font-size:1rem;">'
     'Si un cliente migra de revolvente a pago fijo, ¿cuánto sube su pago mensual y cuántos caen en default? '
@@ -410,7 +439,7 @@ st.markdown("---")
 # ══════════════════════════════════════
 # 5. HEATMAP SENSIBILIDADES
 # ══════════════════════════════════════
-st.markdown('<div class="section-title">🗺️ Mapa de Sensibilidades</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">🗺️ Mapa de Sensibilidades <span class="info-tip"><span class="info-icon">i</span><span class="info-text">Ejecuta los Motores 1 y 2 para todas las combinaciones de nivel de tope (10% a 30%) y duraci\u00F3n. Cada celda muestra el margen (LTV menos hurdle) en d\u00F3lares. Verde = viable (mantener), rojo = no viable (migrar). Permite identificar el umbral exacto donde cada banda deja de ser rentable.</span></span></div>', unsafe_allow_html=True)
 st.markdown(
     '<span style="color:#cbd5e1;font-size:1rem;">'
     '<span style="color:#4ade80;">■</span> MANTENER · '
