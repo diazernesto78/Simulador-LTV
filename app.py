@@ -267,12 +267,16 @@ fig.add_trace(go.Scatter(
 for _, row in df_analisis.iterrows():
     ltv_r = round(row["LTV_USD"])
     hur_r = round(row["Hurdle_USD"])
-    # If values are close, put hurdle label below; otherwise above
-    y_offset = -25 if abs(ltv_r - hur_r) < 200 else 20
+    # If values are close, put hurdle label below diamond; otherwise above
+    y_offset = -30 if abs(ltv_r - hur_r) < 250 else 25
     fig.add_annotation(
         x=row["Banda"], y=hur_r,
-        text=f"${hur_r:,}", showarrow=False,
-        font=dict(size=13, family="IBM Plex Mono", color="#fbbf24"),
+        text=f"  ${hur_r:,}  ", showarrow=False,
+        font=dict(size=13, family="IBM Plex Mono", color="#ffffff", weight="bold"),
+        bgcolor="rgba(15, 23, 42, 0.8)",
+        bordercolor="#fbbf24",
+        borderwidth=1,
+        borderpad=3,
         yshift=y_offset,
     )
 fig.update_layout(
