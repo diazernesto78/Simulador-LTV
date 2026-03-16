@@ -20,6 +20,20 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
     .stApp { background: linear-gradient(180deg, #0a0f1a 0%, #111827 100%); color: #f1f5f9; }
 
+    /* Sidebar - dark background, all text white */
+    [data-testid="stSidebar"] { background: #0f172a !important; }
+    [data-testid="stSidebar"] * { color: #ffffff !important; }
+    [data-testid="stSidebar"] .stSlider > div > div > div > div { background: #3b82f6 !important; }
+    [data-testid="stSidebar"] .stSelectbox > div > div {
+        background: rgba(251, 191, 36, 0.15) !important;
+        border: 2px solid #fbbf24 !important;
+    }
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+        color: #ffffff !important; font-family: 'DM Sans', sans-serif !important;
+    }
+    [data-testid="stSidebar"] .stCaption p { color: #cbd5e1 !important; }
+    [data-testid="stSidebar"] hr { border-color: rgba(71, 85, 105, 0.5) !important; }
+
     /* Typography - bigger, clearer, WHITE not grey */
     h1, h2, h3 { font-family: 'DM Sans', sans-serif !important; color: #ffffff !important; }
     p, li, span, div { font-size: 1rem; color: #f1f5f9; }
