@@ -32,6 +32,17 @@ st.markdown("""
         color: #ffffff !important; font-family: 'DM Sans', sans-serif !important;
     }
     [data-testid="stSidebar"] .stCaption p { color: #cbd5e1 !important; }
+    [data-testid="stSidebar"] .stRadio > div { flex-direction: row !important; gap: 8px !important; }
+    [data-testid="stSidebar"] .stRadio label { 
+        background: rgba(30, 41, 59, 0.8) !important; 
+        border: 1px solid rgba(71, 85, 105, 0.5) !important;
+        border-radius: 8px !important; padding: 6px 12px !important;
+        color: #ffffff !important; font-weight: 600 !important;
+    }
+    [data-testid="stSidebar"] .stRadio [data-checked="true"] label {
+        background: rgba(59, 130, 246, 0.3) !important;
+        border-color: #3b82f6 !important;
+    }
     [data-testid="stSidebar"] hr { border-color: rgba(71, 85, 105, 0.5) !important; }
 
     /* Typography - bigger, clearer, WHITE not grey */
@@ -136,8 +147,8 @@ with st.sidebar:
     st.markdown("### ⚙️ Escenario Regulatorio")
     tope = st.slider("Nivel del tope regulatorio (%)", 10.0, 30.0, 20.0, 0.5,
         help="Tasa m\u00E1xima permitida durante la vigencia del tope.")
-    duracion_tope = st.selectbox("\u23F1\uFE0F DURACI\u00D3N DEL TOPE", [3, 6, 9, 12], index=1,
-        format_func=lambda x: f"{x} meses")
+    duracion_tope = st.radio("\u23F1\uFE0F Duraci\u00F3n del tope", [3, 6, 9, 12], index=1,
+        format_func=lambda x: f"{x} meses", horizontal=True)
 
     st.markdown("---")
     st.markdown("### \U0001F39A\uFE0F Spreads (bps sobre Rf)")
@@ -160,8 +171,8 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### \U0001F4A5 Choque de Pago")
-    plazo_amort = st.selectbox("Plazo amortizaci\u00F3n", [12, 24, 36, 48, 60], index=2,
-        format_func=lambda x: f"{x} meses")
+    plazo_amort = st.radio("Plazo amortizaci\u00F3n", [12, 24, 36, 48, 60], index=2,
+        format_func=lambda x: f"{x} meses", horizontal=True)
     sensibilidad_choque = st.slider("Sensibilidad al choque", 0.01, 0.20, 0.05, 0.01,
         help="Puntos adicionales de P(default) por cada m\u00FAltiplo de choque")
     severidad = st.slider("Severidad de p\u00E9rdida (%)", 20.0, 100.0, 80.0, 5.0,
