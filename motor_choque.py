@@ -133,6 +133,8 @@ def calcular_choque_todas_bandas(
             "Banda": banda,
             "Decision_LTV": decision,
             "Saldo_USD": saldo,
+            "LTV_USD": row["LTV_USD"],
+            "Hurdle_USD": row["Hurdle_USD"],
             "Payment_Rate_pct": payment_rate,
             "Pct_Solo_Minimo": pct_min_solo,
             "Pago_Actual_USD": choque["pago_actual_usd"],
