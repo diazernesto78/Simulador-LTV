@@ -112,7 +112,7 @@ st.markdown("""
     .badge-migrar { background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 5px 14px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; display: inline-block; }
     .badge-excluida { background: rgba(148, 163, 184, 0.15); color: #94a3b8; padding: 5px 14px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; display: inline-block; }
 
-    .note-box { background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 12px; padding: 18px 22px; margin: 16px 0; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: #e2e8f0; line-height: 1.7; }
+    .note-box { background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 12px; padding: 18px 22px; margin: 16px 0; font-family: 'DM Sans', sans-serif; font-size: 1.05rem; color: #e2e8f0; line-height: 1.7; }
     .note-box strong { color: #60a5fa; }
 
     /* Info tooltip */
@@ -148,7 +148,7 @@ st.markdown("""
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:8px;">
     <div style="background:rgba(30,41,59,0.7);border:1px solid rgba(71,85,105,0.4);border-radius:12px;padding:18px 22px;">
         <div style="font-family:'DM Sans';font-size:0.85rem;color:#e2e8f0;text-transform:uppercase;letter-spacing:0.5px;">APR Agregado
-            <span class="info-tip"><span class="info-icon">i</span><span class="info-text">Tasa de inter\u00E9s promedio de tarjetas de cr\u00E9dito en EE.UU. (serie FRED TERMCBCCALLNS). Es el benchmark del mercado. Cada banda tiene su propio APR seg\u00FAn datos del CFPB.</span></span>
+            <span class="info-tip"><span class="info-icon">i</span><span class="info-text">Promedio del mercado (serie FRED TERMCBCCALLNS). Solo se muestra como referencia. El modelo usa el APR espec\u00EDfico de cada banda seg\u00FAn datos del CFPB: Deep Subprime 30%, Subprime 29.9%, Near-Prime 29.4%, Prime 27.3%.</span></span>
         </div>
         <div style="font-family:'IBM Plex Mono';font-size:2rem;color:#60a5fa;margin-top:6px;">""" + f"{datos_macro['APR_pct']:.2f}%" + """</div>
     </div>
@@ -236,7 +236,7 @@ df_excluidas = df_resultados[df_resultados["Decision"] == "FUERA DE ALCANCE"]
 # ══════════════════════════════════════
 # 2. DECISIÓN POR BANDA
 # ══════════════════════════════════════
-st.markdown('<div class="section-title">📊 Decisión por Banda FICO <span class="info-tip"><span class="info-icon">i</span><span class="info-text">Cada card muestra el resultado del Motor 1 (LTV) y Motor 2 (decisión) para una banda de puntaje FICO. Si el LTV supera el hurdle, la banda se MANTIENE como revolvente. Si no, se marca para MIGRAR a pago fijo. Las bandas Prime Plus y Superprime están fuera del alcance porque su ingreso viene de interchange, no de intereses.</span></span></div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">📊 Decisión por Banda FICO <span class="info-tip"><span class="info-icon">i</span><span class="info-text">Cada card muestra el resultado del Motor 1 (LTV) y Motor 2 (decisi\u00F3n). Si el LTV supera el hurdle, la banda se MANTIENE como revolvente. Si no, se marca para MIGRAR a pago fijo. Las bandas Prime Plus y Superprime est\u00E1n fuera del alcance porque su ingreso no proviene de intereses revolventes, que es lo que mide este modelo.</span></span></div>', unsafe_allow_html=True)
 st.markdown("")
 card_cols = st.columns(4)
 
@@ -315,7 +315,7 @@ st.markdown("---")
 # ══════════════════════════════════════
 # 3. GRÁFICA LTV vs HURDLE
 # ══════════════════════════════════════
-st.markdown('<div class="section-title">📈 LTV vs Hurdle por Banda <span class="info-tip"><span class="info-icon">i</span><span class="info-text">La barra muestra el valor presente de los flujos netos a 60 meses (LTV). El diamante amarillo muestra el rendimiento m\u00EDnimo que el banco exige (hurdle = Rf + spread). Dentro de cada barra se muestra el margen: positivo (verde) = viable, negativo (rojo) = migrar.</span></span></div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">📈 LTV vs Hurdle por Banda <span class="info-tip"><span class="info-icon">i</span><span class="info-text">La barra muestra el valor presente de los flujos netos a 60 meses (LTV). El diamante amarillo muestra el piso de rentabilidad exigido por el banco (hurdle = Rf + spread). Dentro de cada barra se muestra el margen en d\u00F3lares: positivo (verde) = viable, negativo (rojo) = migrar.</span></span></div>', unsafe_allow_html=True)
 st.markdown("")
 
 fig = go.Figure()
@@ -323,7 +323,7 @@ fig.add_trace(go.Bar(
     name="Barra = LTV",
     x=df_analisis["Banda"], y=df_analisis["LTV_USD"],
     marker_color=[BAND_COLORS[b] for b in df_analisis["Banda"]],
-    showlegend=True, opacity=0.9,
+    showlegend=False, opacity=0.9,
     hovertemplate="LTV: $%{y:,.0f}<extra></extra>",
 ))
 fig.add_trace(go.Scatter(
@@ -361,6 +361,7 @@ fig.update_layout(
     margin=dict(t=60, b=40),
 )
 st.plotly_chart(fig, use_container_width=True)
+st.markdown('<span style="color:#94a3b8;font-size:0.85rem;font-family:DM Sans;">El color de cada barra refleja el nivel de riesgo de la banda (rojo = mayor riesgo, verde = menor). La decisi\u00F3n de mantener o migrar la indica el margen dentro de la barra: verde = viable, rojo = migrar.</span>', unsafe_allow_html=True)
 st.markdown("---")
 
 # ══════════════════════════════════════
@@ -401,24 +402,33 @@ for i, (_, row) in enumerate(df_ch_analisis.iterrows()):
     p_def = row["P_Default_Choque_pct"]
     perd = round(row["Perdida_Migracion_USD"])
     costo_m = round(row["Costo_Mantener_USD"])
+    ltv_ch = round(row["LTV_USD"])
+    hur_ch = round(row["Hurdle_USD"])
 
     if badge_cls:
         badge_html = f'<div class="{badge_cls}">{badge_txt}</div>'
 
+    # Desglose del costo mantener
+    if costo_m > 0:
+        desglose = f'<div style="color:#94a3b8;font-size:0.8rem;margin-top:2px;">LTV ${ltv_ch:,} \u2212 Hurdle ${hur_ch:,} = \u2212${costo_m:,}</div>'
+    else:
+        desglose = f'<div style="color:#94a3b8;font-size:0.8rem;margin-top:2px;">LTV supera Hurdle \u2192 sin costo</div>'
+
     with ch_cards[i]:
         st.markdown(f"""
         <div style="background:rgba(30,41,59,0.6);border:1px solid {color}50;border-top:4px solid {color};
-            border-radius:14px;padding:18px 16px;text-align:center;min-height:320px;">
-            <div style="font-family:'DM Sans';font-weight:700;color:{color};font-size:1.05rem;margin-bottom:10px;">{banda}</div>
+            border-radius:14px;padding:18px 16px;text-align:center;min-height:380px;">
+            <div style="font-family:'DM Sans';font-weight:700;color:{color};font-size:1.1rem;margin-bottom:10px;">{banda}</div>
             {badge_html}
-            <div style="font-family:'IBM Plex Mono';font-size:0.85rem;color:#cbd5e1;line-height:2;margin-top:12px;">
+            <div style="font-family:'IBM Plex Mono';font-size:0.95rem;color:#e2e8f0;line-height:2.1;margin-top:12px;">
                 <div>Pago actual <span style="color:#f1f5f9;font-weight:600;">${pago_a:,.0f}/mes</span></div>
                 <div>Pago nuevo <span style="color:#fbbf24;font-weight:600;">${pago_n:,.0f}/mes</span></div>
-                <div>Choque <span style="color:#f87171;font-weight:700;">{mult:.1f}×</span></div>
+                <div>Choque <span style="color:#f87171;font-weight:700;">{mult:.1f}\u00D7</span></div>
                 <div>P(default) <span style="color:#f87171;font-weight:600;">{p_def:.1f}%</span></div>
-                <div style="margin-top:6px;border-top:1px solid rgba(71,85,105,0.3);padding-top:6px;">
-                    <div>Pérdida migrar <span style="color:#f87171;font-weight:600;">${perd:,}</span></div>
+                <div style="margin-top:8px;border-top:1px solid rgba(71,85,105,0.3);padding-top:8px;">
+                    <div>P\u00E9rdida migrar <span style="color:#f87171;font-weight:600;">${perd:,}</span></div>
                     <div>Costo mantener <span style="color:#fbbf24;font-weight:600;">${costo_m:,}</span></div>
+                    {desglose}
                 </div>
             </div>
         </div>""", unsafe_allow_html=True)
@@ -504,18 +514,17 @@ with st.expander("Multiplicadores de charge-off actuales", expanded=False):
 with st.expander("Supuestos y limitaciones del modelo", expanded=False):
     st.markdown("""
 **Supuestos:**
-1. Comportamiento del cliente (% revolvers) **estático** durante el tope
-2. Tasa de pérdida neta base **estática** durante el tope
+1. Comportamiento del cliente (% revolvers) **est\u00E1tico** durante el tope
+2. Tasa de p\u00E9rdida neta base **est\u00E1tica** durante el tope
 3. Portafolios de **banca Tier 1** en Estados Unidos
-4. Datos FICO del CFPB (2024) como **parámetros fijos**
-5. Rf y fondeo: **última observación** FRED
+4. Datos FICO del CFPB (2024) como **par\u00E1metros fijos**
+5. Rf y fondeo: **\u00FAltima observaci\u00F3n** FRED
 6. Horizonte: **60 meses**
 
 **Limitaciones:**
-- Solo mide **ingresos por intereses revolventes** — no incluye interchange, anualidades ni fees
-- Prime Plus y Superprime **fuera del análisis**: su valor viene de ingresos transaccionales
-- Se intentó incorporar comisiones vía Costo Total de Crédito del CFPB, pero la métrica no captura el ingreso del emisor en segmentos premium
-- Extensión futura: datos de interchange (Fed Regulation II) + purchase volume por banda del CFPB
+- Solo mide **ingresos por intereses revolventes**, que es el componente dominante para bandas Deep Subprime a Prime
+- Prime Plus y Superprime **fuera del an\u00E1lisis**: su ingreso no proviene de intereses revolventes, que es lo que mide este modelo
+- Se intent\u00F3 incorporar comisiones v\u00EDa Costo Total de Cr\u00E9dito del CFPB, pero la m\u00E9trica no captura el ingreso real del emisor en segmentos con alto porcentaje de totaleros
 - Con datos internos de un banco, el modelo cubre **las 6 bandas** sin cambio estructural
     """)
 
